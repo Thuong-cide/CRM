@@ -18,7 +18,8 @@ export default function Login() {
       login(data.token, data.user);
       navigate('/');
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Đăng nhập thất bại');
+      const msg = err.response?.data?.error || err.message || 'Đăng nhập thất bại';
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
