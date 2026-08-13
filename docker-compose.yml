@@ -6,7 +6,7 @@ services:
     environment:
       - PORT=3001
       - DATABASE_URL=postgresql://postgres:***@postgres_db:5432/crm_db
-      - JWT_SECRET=${JWT_…ret}
+      - JWT_SECRET=${JWT_SECRET:-crm_jwt_secret_2024}
       - RENEW_DAYS_BEFORE=${RENEW_DAYS_BEFORE:-7}
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
     networks:
