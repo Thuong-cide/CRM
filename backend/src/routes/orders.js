@@ -167,4 +167,66 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// POST /api/orders/:id/renew — Gia hạn: đổi đơn cũ → renewed, tạo đơn mới
+router.post('/:id/renew', async (req, res) => {
+  const pool = getPool();
+  try {
+    // Lấy đơn cũ + thông tin sản phẩm
+    const { rows } = await pool.query(`
+      SELECT o.*, p.duration_months
+      FROM orders o
+      LEFT JOIN products p ON o.product_id = p.id
+      WHERE o.id = $1
+    `, [req.params.id]);
+    const old = rows[0];
+    if (!old) return res.status(404).json({ error: 'Không tìm thấy đơn' });
+
+    const {
+      price         = old.price,
+      cost_price    = old.cost_price,
+      account_email = old.account_email,
+      purchase_date,   // ngày bắt đầu mới, mặc định hôm nay
+      notes         = null,
+      supplier      = old.supplier,
+    } = req.body || {};
+
+    // Tính ngày bắt đầu và hết hạn mới
+    const startDate  = purchase_date ? new Date(purchase_date) : new Date();
+    const expireDate = new Date(startDate);
+    expireDate.setMonth(expireDate.getMonth() + (old.duration_months || 1));
+    const fmt = d => d.toISOString().split('T')[0];
+
+    // Đổi đơn cũ → renewed
+    await pool.query(
+      `UPDATE orders SET status = 'renewed' WHERE id = $1`,
+      [req.params.id]
+    );
+
+    // Tạo đơn mới
+    const newOrder = await pool.query(`
+      INSERT INTO orders
+        (customer_id, product_id, account_email, quantity, price, cost_price,
+         purchase_date, expire_date, status, notes, supplier)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'active',$9,$10)
+      RETURNING id
+    `, [
+      old.customer_id, old.product_id,
+      account_email || old.account_email,
+      old.quantity, price, cost_price || null,
+      fmt(startDate), fmt(expireDate),
+      notes, supplier || null,
+    ]);
+
+    res.json({
+      message: 'Đã gia hạn thành công',
+      old_order_id: old.id,
+      new_order_id: newOrder.rows[0].id,
+      new_expire_date: fmt(expireDate),
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

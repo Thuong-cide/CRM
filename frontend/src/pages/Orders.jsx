@@ -3,6 +3,69 @@ import { Link } from 'react-router-dom';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 
+// Modal Gia hạn
+function RenewModal({ order, onClose, onDone }) {
+  const today = new Date().toISOString().split('T')[0];
+  const [purchaseDate, setPurchaseDate] = useState(today);
+  const [price, setPrice]               = useState(order.price);
+  const [accountEmail, setAccountEmail] = useState(order.account_email || '');
+  const [loading, setLoading]           = useState(false);
+
+  const submit = async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.post(`/api/orders/${order.id}/renew`, {
+        purchase_date: purchaseDate,
+        price: parseFloat(price),
+        account_email: accountEmail,
+      });
+      toast.success(`✅ Đã gia hạn! Hết hạn mới: ${new Date(data.new_expire_date).toLocaleDateString('vi-VN')}`);
+      onDone();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Lỗi gia hạn');
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+        <h3 className="text-lg font-bold mb-1">🔄 Gia hạn đơn hàng</h3>
+        <p className="text-sm text-gray-500 mb-4">{order.customer_name} — {order.product_name}</p>
+
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs font-medium text-gray-600">Ngày bắt đầu mới</label>
+            <input type="date" className="input mt-1" value={purchaseDate}
+              onChange={e => setPurchaseDate(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-600">Giá gia hạn</label>
+            <input type="number" className="input mt-1" value={price}
+              onChange={e => setPrice(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-600">Mail account</label>
+            <input type="text" className="input mt-1" value={accountEmail}
+              onChange={e => setAccountEmail(e.target.value)}
+              placeholder="Giữ nguyên nếu không đổi" />
+          </div>
+        </div>
+
+        <div className="flex gap-2 mt-5">
+          <button onClick={onClose}
+            className="flex-1 px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50 text-sm">
+            Hủy
+          </button>
+          <button onClick={submit} disabled={loading}
+            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 text-sm font-medium disabled:opacity-50">
+            {loading ? 'Đang xử lý...' : '✅ Xác nhận gia hạn'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Nút liên hệ nhanh
 function ContactButtons({ r }) {
   const phone = r.customer_phone?.trim();
@@ -43,6 +106,7 @@ export default function Orders() {
   const [search, setSearch]   = useState('');
   const [page, setPage]       = useState(1);
   const [loading, setLoading] = useState(false);
+  const [renewOrder, setRenewOrder] = useState(null); // modal gia hạn
   const LIMIT = 50;
 
   const fetchData = useCallback(async () => {
@@ -59,7 +123,12 @@ export default function Orders() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const updateStatus = async (id, newStatus) => {
+  const updateStatus = async (id, newStatus, row) => {
+    if (newStatus === 'renewed') {
+      // Mở modal gia hạn thay vì đổi status trực tiếp
+      setRenewOrder(row);
+      return;
+    }
     await api.put(`/api/orders/${id}`, { status: newStatus });
     toast.success('Đã cập nhật');
     fetchData();
@@ -80,6 +149,13 @@ export default function Orders() {
 
   return (
     <div className="p-3 md:p-6">
+      {renewOrder && (
+        <RenewModal
+          order={renewOrder}
+          onClose={() => setRenewOrder(null)}
+          onDone={() => { setRenewOrder(null); fetchData(); }}
+        />
+      )}
       <div className="flex justify-between items-center mb-3">
         <h2 className="text-lg md:text-xl font-bold text-gray-800">
           📦 Đơn hàng <span className="text-gray-400 font-normal text-sm md:text-base">({total})</span>
@@ -138,8 +214,7 @@ export default function Orders() {
                 </div>
                 <select
                   value={r.status}
-                  onChange={e => updateStatus(r.id, e.target.value)}
-                  className="border rounded-lg px-2 py-1 text-xs bg-white ml-2">
+                  onChange={e => updateStatus(r.id, e.target.value, r)}
                   <option value="active">✅ Active</option>
                   <option value="expired">❌ Hết hạn</option>
                   <option value="renewed">🔄 Gia hạn</option>
@@ -230,7 +305,7 @@ export default function Orders() {
                   </td>
                   <td className="px-4 py-3 text-green-600">{fmtMoney(r.price * r.quantity)}</td>
                   <td className="px-4 py-3">
-                    <select value={r.status} onChange={e => updateStatus(r.id, e.target.value)}
+                  onChange={e => updateStatus(r.id, e.target.value, r)}
                       className="border rounded px-2 py-1 text-xs">
                       <option value="active">Active</option>
                       <option value="expired">Hết hạn</option>
