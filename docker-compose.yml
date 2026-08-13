@@ -12,8 +12,6 @@ services:
     networks:
       - crm-net
       - postgres-stack_default
-    depends_on:
-      - frontend
 
   frontend:
     build:
@@ -24,6 +22,8 @@ services:
     restart: unless-stopped
     ports:
       - "8088:80"
+    depends_on:
+      - backend
     networks:
       - crm-net
 
