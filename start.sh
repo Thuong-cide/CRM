@@ -15,14 +15,17 @@ node index.js &
 BACKEND_PID=$!
 echo "✅ Backend chạy (PID $BACKEND_PID) → http://localhost:3001"
 
-# Chạy frontend
+# Chạy frontend (dev server, bind ra network để điện thoại truy cập được)
 cd "$DIR/frontend"
-npx vite preview --port 3000 &
+npx vite --port 3000 --host 0.0.0.0 &
 FRONTEND_PID=$!
 echo "✅ Frontend chạy (PID $FRONTEND_PID) → http://localhost:3000"
 
+# Hiển thị IP mạng để truy cập từ điện thoại
+LOCAL_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null)
 echo ""
 echo "📌 Đăng nhập: admin / Admin@123"
+echo "📱 Điện thoại (cùng WiFi): http://${LOCAL_IP}:3000"
 echo "📌 Nhấn Ctrl+C để dừng"
 
 # Mở browser

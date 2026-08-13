@@ -9,6 +9,7 @@ import Customers from './pages/Customers';
 import CustomerDetail from './pages/CustomerDetail';
 import Orders from './pages/Orders';
 import Products from './pages/Products';
+import Warranties from './pages/Warranties';
 
 function AppRoutes() {
   const { user } = useAuth();
@@ -19,6 +20,7 @@ function AppRoutes() {
       <Route path="/customers" element={<ProtectedRoute><Layout><Customers /></Layout></ProtectedRoute>} />
       <Route path="/customers/:id" element={<ProtectedRoute><Layout><CustomerDetail /></Layout></ProtectedRoute>} />
       <Route path="/orders" element={<ProtectedRoute><Layout><Orders /></Layout></ProtectedRoute>} />
+      <Route path="/warranties" element={<ProtectedRoute><Layout><Warranties /></Layout></ProtectedRoute>} />
       <Route path="/products" element={<ProtectedRoute><Layout><Products /></Layout></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
