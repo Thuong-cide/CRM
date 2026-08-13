@@ -19,7 +19,8 @@ export default function Login() {
       navigate('/');
     } catch (err) {
       const msg = err.response?.data?.error || err.message || 'Đăng nhập thất bại';
-      toast.error(msg);
+      const detail = err.code || err.response?.status || '';
+      toast.error(`${msg}${detail ? ' (' + detail + ')' : ''}`);
     } finally {
       setLoading(false);
     }
