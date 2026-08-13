@@ -72,7 +72,14 @@ function ContactButtons({ r }) {
   const zalo  = r.customer_zalo?.trim();
   const fb    = r.customer_facebook?.trim();
 
-  if (!phone && !zalo && !fb) return null;
+  // Tạo link zalo từ SĐT nếu không có link zalo riêng
+  const zaloLink = zalo
+    ? (zalo.startsWith('http') ? zalo : `https://zalo.me/${zalo.replace(/^0/, '84')}`)
+    : phone ? `https://zalo.me/${phone.replace(/^0/, '84')}` : null;
+
+  if (!phone && !zaloLink && !fb) return (
+    <span className="text-xs text-gray-400 italic">Chưa có SĐT/mạng xã hội</span>
+  );
 
   return (
     <div className="flex gap-1 mt-2 flex-wrap">
@@ -82,9 +89,8 @@ function ContactButtons({ r }) {
           📞 Gọi
         </a>
       )}
-      {zalo && (
-        <a href={zalo.startsWith('http') ? zalo : `https://zalo.me/${zalo.replace(/^0/, '84')}`}
-          target="_blank" rel="noreferrer"
+      {zaloLink && (
+        <a href={zaloLink} target="_blank" rel="noreferrer"
           className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-200 transition">
           💬 Zalo
         </a>
