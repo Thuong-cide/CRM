@@ -13,7 +13,10 @@ router.post('/login', async (req, res) => {
 
     const { rows } = await getPool().query('SELECT * FROM users WHERE username = $1', [username]);
     const user = rows[0];
-    if (!user || !(await bcrypt.compare(password, user.password_hash)))
+    console.log('user found:', !!user, 'hash:', user?.password_hash?.substring(0,20));
+    const match = user ? await bcrypt.compare(password, user.password_hash) : false;
+    console.log('bcrypt match:', match);
+    if (!user || !match)
       return res.status(401).json({ error: 'Sai tên đăng nhập hoặc mật khẩu' });
 
     const token = jwt.sign(
