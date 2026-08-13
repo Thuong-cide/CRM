@@ -8,6 +8,7 @@ const router = express.Router();
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body || {};
+    console.log('LOGIN attempt:', JSON.stringify({ username, password: password ? '***' : undefined, body: req.body, ct: req.headers['content-type'] }));
     if (!username || !password) return res.status(400).json({ error: 'Thiếu username/password' });
 
     const { rows } = await getPool().query('SELECT * FROM users WHERE username = $1', [username]);
