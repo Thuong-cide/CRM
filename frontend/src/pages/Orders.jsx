@@ -215,6 +215,7 @@ export default function Orders() {
                 <select
                   value={r.status}
                   onChange={e => updateStatus(r.id, e.target.value, r)}
+                  className="border rounded-lg px-2 py-1 text-xs bg-white ml-2">
                   <option value="active">✅ Active</option>
                   <option value="expired">❌ Hết hạn</option>
                   <option value="renewed">🔄 Gia hạn</option>
@@ -305,7 +306,8 @@ export default function Orders() {
                   </td>
                   <td className="px-4 py-3 text-green-600">{fmtMoney(r.price * r.quantity)}</td>
                   <td className="px-4 py-3">
-                  onChange={e => updateStatus(r.id, e.target.value, r)}
+                    <select value={r.status}
+                      onChange={e => updateStatus(r.id, e.target.value, r)}
                       className="border rounded px-2 py-1 text-xs">
                       <option value="active">Active</option>
                       <option value="expired">Hết hạn</option>
