@@ -3,12 +3,45 @@ import { Link } from 'react-router-dom';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 
+// Nút liên hệ nhanh
+function ContactButtons({ r }) {
+  const phone = r.customer_phone?.trim();
+  const zalo  = r.customer_zalo?.trim();
+  const fb    = r.customer_facebook?.trim();
+
+  if (!phone && !zalo && !fb) return null;
+
+  return (
+    <div className="flex gap-1 mt-2 flex-wrap">
+      {phone && (
+        <a href={`tel:${phone}`}
+          className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-medium hover:bg-green-200 transition">
+          📞 Gọi
+        </a>
+      )}
+      {zalo && (
+        <a href={zalo.startsWith('http') ? zalo : `https://zalo.me/${zalo.replace(/^0/, '84')}`}
+          target="_blank" rel="noreferrer"
+          className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-200 transition">
+          💬 Zalo
+        </a>
+      )}
+      {fb && (
+        <a href={fb} target="_blank" rel="noreferrer"
+          className="flex items-center gap-1 px-2 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-xs font-medium hover:bg-indigo-200 transition">
+          📘 FB
+        </a>
+      )}
+    </div>
+  );
+}
+
 export default function Orders() {
-  const [rows, setRows]     = useState([]);
-  const [total, setTotal]   = useState(0);
-  const [status, setStatus] = useState('active');
-  const [search, setSearch] = useState('');
-  const [page, setPage]     = useState(1);
+  const [rows, setRows]       = useState([]);
+  const [total, setTotal]     = useState(0);
+  const [status, setStatus]   = useState('active');
+  const [search, setSearch]   = useState('');
+  const [page, setPage]       = useState(1);
   const [loading, setLoading] = useState(false);
   const LIMIT = 50;
 
@@ -61,7 +94,6 @@ export default function Orders() {
           value={search}
           onChange={e => { setSearch(e.target.value); setPage(1); }}
         />
-        {/* Status tabs — scroll ngang trên mobile */}
         <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
           {STATUS_TABS.map(([v, l]) => (
             <button key={v}
@@ -83,10 +115,16 @@ export default function Orders() {
           <div className="text-center py-10 text-gray-400">Không có đơn nào</div>
         ) : rows.map(r => {
           const days = daysLeft(r.expire_date);
-          const isUrgent = r.status === 'active' && days !== null && days <= 7;
+          const isExpired  = r.status === 'expired' || (r.status === 'active' && days !== null && days <= 0);
+          const isExpiring = r.status === 'active' && days !== null && days > 0 && days <= 7;
+          const isUrgent   = isExpired || isExpiring;
           return (
             <div key={r.id}
-              className={`bg-white rounded-xl border shadow-sm p-4 ${isUrgent ? 'border-yellow-300 bg-yellow-50' : 'border-gray-100'}`}>
+              className={`bg-white rounded-xl border shadow-sm p-4 ${
+                isExpired  ? 'border-red-300 bg-red-50' :
+                isExpiring ? 'border-yellow-300 bg-yellow-50' :
+                'border-gray-100'
+              }`}>
               {/* Row 1: KH + trạng thái */}
               <div className="flex justify-between items-start mb-2">
                 <div>
@@ -133,6 +171,16 @@ export default function Orders() {
                   </span>
                 )}
               </div>
+
+              {/* Nút liên hệ nhanh — chỉ hiện khi urgent */}
+              {isUrgent && (
+                <div className="border-t border-gray-100 pt-2 mt-2">
+                  <div className="text-xs text-gray-500 mb-1 font-medium">
+                    {isExpired ? '❌ Hết hạn — Liên hệ gia hạn:' : '⚠️ Sắp hết hạn — Liên hệ:'}
+                  </div>
+                  <ContactButtons r={r} />
+                </div>
+              )}
             </div>
           );
         })}
@@ -143,21 +191,26 @@ export default function Orders() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b text-gray-500 text-xs uppercase">
             <tr>
-              {['Khách hàng', 'Sản phẩm', 'Mail account', 'Ngày mua', 'Hết hạn', 'Còn lại', 'Giá', 'Trạng thái'].map(h => (
+              {['Khách hàng', 'Sản phẩm', 'Mail account', 'Ngày mua', 'Hết hạn', 'Còn lại', 'Giá', 'Trạng thái', 'Liên hệ'].map(h => (
                 <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y">
             {loading ? (
-              <tr><td colSpan={8} className="text-center py-10 text-gray-400">Đang tải...</td></tr>
+              <tr><td colSpan={9} className="text-center py-10 text-gray-400">Đang tải...</td></tr>
             ) : rows.length === 0 ? (
-              <tr><td colSpan={8} className="text-center py-10 text-gray-400">Không có đơn nào</td></tr>
+              <tr><td colSpan={9} className="text-center py-10 text-gray-400">Không có đơn nào</td></tr>
             ) : rows.map(r => {
               const days = daysLeft(r.expire_date);
-              const isUrgent = r.status === 'active' && days !== null && days <= 7;
+              const isExpired  = r.status === 'expired' || (r.status === 'active' && days !== null && days <= 0);
+              const isExpiring = r.status === 'active' && days !== null && days > 0 && days <= 7;
+              const isUrgent   = isExpired || isExpiring;
               return (
-                <tr key={r.id} className={`hover:bg-gray-50 ${isUrgent ? 'bg-yellow-50' : ''}`}>
+                <tr key={r.id} className={`hover:bg-gray-50 ${
+                  isExpired  ? 'bg-red-50' :
+                  isExpiring ? 'bg-yellow-50' : ''
+                }`}>
                   <td className="px-4 py-3">
                     <Link to={`/customers/${r.customer_id}`} className="font-medium text-blue-600 hover:underline">
                       {r.customer_name}
@@ -184,6 +237,12 @@ export default function Orders() {
                       <option value="renewed">Gia hạn</option>
                       <option value="cancelled">Hủy</option>
                     </select>
+                  </td>
+                  <td className="px-4 py-3">
+                    {isUrgent
+                      ? <ContactButtons r={r} />
+                      : <span className="text-gray-300 text-xs">—</span>
+                    }
                   </td>
                 </tr>
               );

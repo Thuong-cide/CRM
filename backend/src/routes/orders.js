@@ -33,7 +33,8 @@ router.get('/', async (req, res) => {
     const total = parseInt(countRes.rows[0].cnt);
 
     const rowsRes = await pool.query(`
-      SELECT o.*, p.name as product_name, c.name as customer_name, c.phone as customer_phone
+      SELECT o.*, p.name as product_name, c.name as customer_name,
+             c.phone as customer_phone, c.zalo as customer_zalo, c.facebook as customer_facebook
       FROM orders o
       LEFT JOIN products p ON o.product_id = p.id
       LEFT JOIN customers c ON o.customer_id = c.id
